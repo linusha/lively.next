@@ -423,7 +423,6 @@ export class Label extends Morph {
           fontFamily,
           fontSize: typeof fontSize === "number" ? fontSize + "px" : fontSize,
           color: fontColor ? String(fontColor) : "transparent",
-          position: "absolute",
           cursor: this.nativeCursor
         },
         attrs = defaultAttributes(this, renderer);
