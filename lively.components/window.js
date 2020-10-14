@@ -1,7 +1,7 @@
 import { arr, promise } from "lively.lang";
 import { pt, LinearGradient, Color, Rectangle } from "lively.graphics";
 import {
-  Label,
+  Label, GridLayout,
   morph,
   Morph,
   HorizontalLayout,
@@ -167,12 +167,8 @@ export default class Window extends Morph {
     resizer.bottomRight = innerB.bottomRight();
 
     // targetMorph
-    if (!this.minimized && this.targetMorph && this.targetMorph.isLayoutable) this.targetMorph.setBounds(this.targetMorphBounds());
-
-    // title
-    title.textBounds().width < labelBounds.width - 2 * buttonOffset
-      ? (title.center = labelBounds.center())
-      : (title.leftCenter = minLabelBounds.leftCenter());
+    if (!this.minimized && this.targetMorph && this.targetMorph.isLayoutable)
+      this.targetMorph.setBounds(this.targetMorphBounds());
 
     header.width = this.width;
   }
@@ -189,6 +185,12 @@ export default class Window extends Morph {
     return morph({
         name: 'header',
         extent: pt(this.width, 50),
+        layout: new GridLayout({
+          renderViaCSS: true,
+          grid: [['window controls', 'window title', null]],
+          groups: {'window title': {resize: false, align: 'topCenter'}},
+          columns: [0, { fixed: 70 }, 2, {fixed: 70}]
+        }),
         submorphs: [
           morph({
             name: "window controls",
@@ -257,9 +259,10 @@ export default class Window extends Morph {
 
   buildTitleLabel() {
     return this.addMorph({
-        padding: Rectangle.inset(0, 2, 0, 0),
+        padding: Rectangle.inset(0, 5, 0, 0),
         styleClasses: ["windowTitleLabel"],
         type: "label",
+        isLayoutable: true,
         name: "window title",
         reactsToPointer: false,
         value: ""
