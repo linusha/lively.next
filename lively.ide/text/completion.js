@@ -303,7 +303,7 @@ export class CompletionController {
     input.fontSize = list.fontSize;
     input.focus();
 
-    menu.get("padding").height = 0;
+    //menu.get("padding").height = 0;
     menu.relayout();
     menu.selectedIndex = 0;
     if (prefix.length) {

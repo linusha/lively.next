@@ -327,7 +327,7 @@ export default class Browser extends Morph {
           }),
 
           {name: "moduleCommands", bounds: moduleCommandBoxBounds,
-            layout: new HorizontalLayout({spacing: 3, autoResize: false, direction: "rightToLeft"}),
+            layout: new HorizontalLayout({ renderViaCSS: true, spacing: 3, autoResize: false, direction: "rightToLeft"}),
             borderRight: {color: Color.gray, width: 1},
             reactsToPointer: false,
             fill: Color.transparent,
@@ -340,7 +340,7 @@ export default class Browser extends Morph {
             ]},
 
           {name: "codeEntityCommands", bounds: codeEntityCommandBoxBounds,
-            layout: new HorizontalLayout({spacing: 2, autoResize: false, direction: "rightToLeft"}),
+            layout: new HorizontalLayout({ renderViaCSS: true, spacing: 2, autoResize: false, direction: "rightToLeft"}),
             fill: Color.transparent,
             submorphs: [
               {...btnDarkStyle, name: "codeEntityJumpButton", label: Icon.makeLabel("search"), tooltip: "search for code entity"},
@@ -383,16 +383,18 @@ export default class Browser extends Morph {
 
           {name: "browserCommands", bounds: browserCommandsBounds,
             layout: new GridLayout({
+              renderViaCSS: true,
               grid: [["commands", null, "eval backend button", null]],
               rows: [0, {paddingBottom: 2}],
               columns: [0, {paddingLeft: 2}, 2, {fixed: 100}, 3, {fixed: 5}],
-              groups: {commands: {resize: false}}
+              groups: {commands: {resize: false}, "eval backend button": { resize: false }}
             }),
             fill: Color.transparent,
             reactsToPointer: false,
             borderBottom: {color: Color.gray, width: 1},
             submorphs: [
               {name: "commands", layout: new HorizontalLayout({
+                renderViaCSS: true,
                 spacing: 2, autoResize: false, layoutOrder: function(m) {
                   return this.container.submorphs.indexOf(m);
                 }}),
