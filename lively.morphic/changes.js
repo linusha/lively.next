@@ -1,5 +1,5 @@
 /*global WeakMap*/
-import { arr, string, obj } from "lively.lang";
+import { arr, Path, string, obj } from "lively.lang";
 import { connect, signal, disconnect } from "lively.bindings";
 
 function signalBindings(obj, name, change) {
@@ -170,7 +170,8 @@ export class ChangeManager {
       morph._morphicState[change.prop] = change.value;
     }
 
-    morph.makeDirty(change);
+    if (!Path('meta.isLayoutAction').get(change))
+      morph.makeDirty(change);
 
     var grouping = arr.last(this.changeGroupStack);
     if (grouping && grouping.consumesChanges()) {

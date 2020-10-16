@@ -98,7 +98,8 @@ class Layout {
     return false;
   }
 
-  refreshBoundsCache() {    
+  refreshBoundsCache() {
+    if (this.renderViaCSS) return;
     this.lastExtent = this.container.extent;
     this.layoutableSubmorphBounds = this.layoutableSubmorphs.map(m => m.bounds());
   }
@@ -141,6 +142,7 @@ class Layout {
   }
 
   scheduleApply(submorph, animation, change = {}) {
+    if (this.renderViaCSS) return;
     if (typeof this.onScheduleApply === "function")
       this.onScheduleApply(submorph, animation, change);
     if (this.active) return;
@@ -369,7 +371,6 @@ class FloatLayout extends Layout {
 
   onDomResize(observer, entry, morph) {
     const { contentRect, target } = entry;
-    const originalDirty = morph._dirty;
     if (morph == this.container)
       return this.updateContainerViaDom(contentRect);
 
@@ -395,7 +396,6 @@ class FloatLayout extends Layout {
     }
     
     observer._lastContentRect = contentRect;
-    morph._dirty = originalDirty;
   }
 
   onSubmorphAdded(submorph, animation) {
@@ -620,6 +620,7 @@ export class VerticalLayout extends FloatLayout {
     if (this.autoResize && morph.submorphs.length > 0) style.height = 'auto';
     style.justifyContent = ({topToBottom: 'flex-start', bottomToTop: 'flex-end', centered: 'center'})[this.direction];
     style.alignItems = ({ center: 'center', left: 'flex-start', right: 'flex-end'})[this.align];
+    if (morph.submorphBounds().width > morph.width) style.alignItems = 'flex-start'
     style.flexDirection = 'column';
     style.paddingTop = `${this.spacing / 2}px`;
     style.paddingBottom = `${this.spacing / 2}px`;
@@ -771,7 +772,9 @@ export class HorizontalLayout extends FloatLayout {
     style['flex-shrink'] = 0;
     if (this.resizeSubmorphs) {
       style.height = `calc(100% - ${this.spacing * 2}px)`;
-      morph.height = this.container.height - 2 * this.spacing;
+      morph.withMetaDo({ isLayoutAction: true }, () => {
+        morph.height = this.container.height - 2 * this.spacing;
+      });
     }
   }
 
@@ -1073,7 +1076,9 @@ export class TilingLayout extends Layout {
   onDomResize(observer, entry, morph) {
     const { contentRect, target } = entry;
     const originalDirty = morph._dirty;
-    morph.position = pt(target.offsetLeft, target.offsetTop);
+    morph.withMetaDo({ isLayoutAction: true }, () => {
+      morph.position = pt(target.offsetLeft, target.offsetTop);
+    });
     // only do that if we have changed size in height
     if (!observer) observer = this.ensureBoundsMonitor(target, morph);
     if (observer._lastContentRect && 
@@ -1093,7 +1098,6 @@ export class TilingLayout extends Layout {
     }
     
     observer._lastContentRect = contentRect;
-    morph._dirty = originalDirty;
   }
 
   addSubmorphCSS(morph, style) {
@@ -2217,8 +2221,6 @@ export class GridLayout extends Layout {
         if (!layoutableSubmorph.position.equals(newPos))
           layoutableSubmorph.position = newPos;
       });
-      
-      //layoutableSubmorph._dirty = false; // prevent render
     }
   }
 
