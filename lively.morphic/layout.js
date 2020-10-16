@@ -217,6 +217,12 @@ class Layout {
     this.active = false;
   }
 
+  getRelativePosOfTarget(target) {
+    const contentRect= target.getBoundingClientRect();
+    const ownerBox = target.parentNode ? target.parentNode.getBoundingClientRect() : { left: 0, top: 0};
+    return pt(contentRect.left - ownerBox.left, contentRect.top - ownerBox.top); 
+  }
+
   ensureBoundsMonitor(node, morph) {
     if (!morph.isLayoutable) return;
     let observer = this._resizeObservers.get(morph);
@@ -228,6 +234,7 @@ class Layout {
     this._resizeObservers.set(morph, observer);
     return observer;
   }
+
 }
 
 export class CustomLayout extends Layout {
@@ -585,7 +592,7 @@ export class VerticalLayout extends FloatLayout {
 
   updateSubmorphViaDom(morph, target, contentRect) {
     const { width } = contentRect;
-    const newPos = pt(target.offsetLeft, target.offsetTop);
+    const newPos = this.getRelativePosOfTarget(target, contentRect);
     if (!newPos.equals(morph.position)) morph.position = newPos;
     if (this.resizeSubmorphs && morph.width != width) morph.width = width;
   }
@@ -625,6 +632,7 @@ export class VerticalLayout extends FloatLayout {
     style.paddingTop = `${this.spacing / 2}px`;
     style.paddingBottom = `${this.spacing / 2}px`;
   }
+
 }
 
 export class HorizontalLayout extends FloatLayout {
@@ -751,7 +759,7 @@ export class HorizontalLayout extends FloatLayout {
 
   updateSubmorphViaDom(morph, target, contentRect) {
     const height = contentRect.height;
-    const newPos = pt(target.offsetLeft, target.offsetTop);
+    const newPos = this.getRelativePosOfTarget(target, contentRect);
     if (!newPos.equals(morph.position)) morph.position = newPos;
     if (this.resizeSubmorphs && morph.height != height) morph.height = height;
   }
@@ -1058,6 +1066,7 @@ export class TilingLayout extends Layout {
   set align(a) { this._align = a; this.apply() }
 
   get spacing() { return this._spacing; }
+
   set spacing(offset) {
     this._spacing = offset;
     this.apply();
@@ -1075,9 +1084,9 @@ export class TilingLayout extends Layout {
 
   onDomResize(observer, entry, morph) {
     const { contentRect, target } = entry;
-    const originalDirty = morph._dirty;
+    const newPosition = this.getRelativePosOfTarget(target, contentRect);
     morph.withMetaDo({ isLayoutAction: true }, () => {
-      morph.position = pt(target.offsetLeft, target.offsetTop);
+      morph.position = newPosition;
     });
     // only do that if we have changed size in height
     if (!observer) observer = this.ensureBoundsMonitor(target, morph);
@@ -2204,7 +2213,7 @@ export class GridLayout extends Layout {
               if (!layoutableSubmorph.extent.equals(newExt))
                 layoutableSubmorph.extent = newExt;
             }
-            const newPos = pt(node.offsetLeft, node.offsetTop);
+            const newPos = this.getRelativePosOfTarget(node);
             if (!layoutableSubmorph.position.equals(newPos))
               layoutableSubmorph.position = newPos;
           });
@@ -2217,7 +2226,7 @@ export class GridLayout extends Layout {
           if (!layoutableSubmorph.extent.equals(newExt))
             layoutableSubmorph.extent = newExt;
         }
-        const newPos = pt(node.offsetLeft, node.offsetTop);
+        const newPos = this.getRelativePosOfTarget(node);
         if (!layoutableSubmorph.position.equals(newPos))
           layoutableSubmorph.position = newPos;
       });
