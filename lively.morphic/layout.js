@@ -31,6 +31,8 @@ class Layout {
     this.apply();
     this.refreshBoundsCache();
   }
+
+  toString() { return `<a ${this.name()} Layout>`}
   
   copy() { return new this.constructor(this) }
 
