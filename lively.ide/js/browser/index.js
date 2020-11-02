@@ -5,7 +5,7 @@ import { connect } from "lively.bindings";
 import {
   morph, Morph, easings,
   StyleSheet,
-  HorizontalLayout, 
+  HorizontalLayout,
   GridLayout,
   config,
   Icon,
@@ -162,7 +162,9 @@ export default class Browser extends Morph {
     connect(codeEntityTree, "selectedNode", this, "onCodeEntitySelected");
 
     connect(sourceEditor, "textChange", this, "updateUnsavedChangeIndicatorDebounced");
+    connect(sourceEditor, "textChange", this, "updateLineNumbers");
     connect(sourceEditor, 'onMouseDown', this, 'updateFocusedCodeEntity');
+    connect(sourceEditor, "onScroll", this, "updateLineNumberScroll");
 
     moduleList.selection = null;
     moduleList.items = [];
@@ -294,7 +296,8 @@ export default class Browser extends Morph {
           resizerBounds,
           metaInfoBounds,
           frozenWarningBounds,
-          sourceEditorBounds
+          sourceEditorBounds,
+          lineNumberBounds
         ] = bounds.extent().extentAsRectangle().divide([
           new Rectangle(0,   0,    1,   0.04),
           new Rectangle(0,   0.04, 0.5, 0.34),
@@ -304,7 +307,8 @@ export default class Browser extends Morph {
           new Rectangle(0,   0.38, 1,   0.01),
           new Rectangle(0,   0.39, 1,   0.03),
           new Rectangle(0,   0.42, 1,   0),
-          new Rectangle(0,   0.42, 1,   0.57)
+          new Rectangle(0.03,   0.42, (1-0.03),   0.57),
+          new Rectangle(0, 0.42, 0.03, 0.57)
         ]),
         container = this;
         
@@ -358,12 +362,20 @@ export default class Browser extends Morph {
             fontSize: config.codeEditor.defaultStyle.fontSize - 2,
             clipMode: "hidden",
             borderWidth: 1,
-            reactsToPointer: false
+            reactsToPointer: false,
           },
           {name: "sourceEditor", bounds: sourceEditorBounds, 
            borderRadius: Rectangle.inset(7,0,7,7),
            borderWidthLeft: 3,
            ...textStyle},
+          {
+            name: "lineNumbers",
+            bounds: lineNumberBounds,
+            ...textStyle,
+            type: "text",
+            fontSize: config.codeEditor.defaultStyle.fontSize,
+            reactsToPointer: false,
+          },
            // {
            //   name: "save note",
            //   master: { auto: "styleguide://System/saveNote"},
@@ -428,6 +440,7 @@ export default class Browser extends Morph {
         sourceEditor =       container.getSubmorphNamed("sourceEditor"),
         frozenWarning =      container.getSubmorphNamed("frozen-warning"),
         metaInfoText =       container.getSubmorphNamed("metaInfoText"),
+        lineNumbers =        container.getSubmorphNamed("lineNumbers"),
         evalBackendChooser = container.getSubmorphNamed("eval backend button");
 
     evalBackendChooser.width = 150;
@@ -446,6 +459,7 @@ export default class Browser extends Morph {
     hresizer.addFixed(codeEntityCommands);
     hresizer.addFixed(metaInfoText);
     hresizer.addFixed(frozenWarning);
+    hresizer.addScalingBelow(lineNumbers);
     hresizer.addScalingBelow(sourceEditor);
 
     this._inLayout = false;
@@ -472,6 +486,7 @@ export default class Browser extends Morph {
       hresizer,
       evalBackendList,
       frozenWarning,
+      lineNumbers,
     } = this.ui;
 
     var listEditorRatio = moduleList.height / (this.height - hresizer.height);
@@ -492,9 +507,13 @@ export default class Browser extends Morph {
       frozenWarning.width = this.width;
       sourceEditor.setBounds(
         new Rectangle(
-          0, frozenWarning.height > 0 ? frozenWarning.bottom : metaInfoText.bottom,
-          frozenWarning.width - sourceEditor.borderWidth + 1,
+          lineNumbers.width, frozenWarning.height > 0 ? frozenWarning.bottom : metaInfoText.bottom,
+          frozenWarning.width - sourceEditor.borderWidth + 1 - lineNumbers.width,
           this.height - Math.max(metaInfoText.bottom, frozenWarning.bottom)));
+      lineNumbers.setBounds(
+        new Rectangle(
+          0, frozenWarning.height > 0 ? frozenWarning.bottom : metaInfoText.bottom,
+          lineNumbers.width,this.height - Math.max(metaInfoText.bottom, frozenWarning.bottom)));
     } finally { this._inLayout = false; }
   }
 
@@ -531,7 +550,8 @@ export default class Browser extends Morph {
       searchButton:          this.getSubmorphNamed("searchButton"),
       metaInfoText:          this.getSubmorphNamed("metaInfoText"),
       sourceEditor:          this.getSubmorphNamed("sourceEditor"),
-      evalBackendList:       this.getSubmorphNamed("eval backend button")
+      evalBackendList:       this.getSubmorphNamed("eval backend button"),
+      lineNumbers:           this.getSubmorphNamed("lineNumbers"),
     };
   }
 
@@ -585,6 +605,22 @@ export default class Browser extends Morph {
 
   updateUnsavedChangeIndicator() {
     this[this.hasUnsavedChanges() ? "indicateUnsavedChanges" : "indicateNoUnsavedChanges"]();
+  }
+
+  updateLineNumbers() {
+    let linesCount = this.ui.sourceEditor.document.lines.length;
+    let width = (Math.floor(Math.log10(linesCount)) + 1) * config.codeEditor.defaultStyle.fontSize;
+    let lineNumbersString = "";
+    for (let i = 1; i <= linesCount; i++) {
+      lineNumbersString = lineNumbersString.concat(i,"\n");
+    }
+    this.ui.lineNumbers.textString = lineNumbersString;
+    this.ui.lineNumbers.width = width;
+  }
+
+  updateLineNumberScroll() {
+    this.ui.lineNumbers.scroll.y = this.ui.sourceEditor.scroll.y;
+    this.ui.lineNumbers.requestStyling();
   }
 
   // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
