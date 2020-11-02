@@ -357,7 +357,8 @@ export default class Browser extends Morph {
             fill: Color.white,
             fontSize: config.codeEditor.defaultStyle.fontSize - 2,
             clipMode: "hidden",
-            borderWidth: 1
+            borderWidth: 1,
+            reactsToPointer: false
           },
           {name: "sourceEditor", bounds: sourceEditorBounds, 
            borderRadius: Rectangle.inset(7,0,7,7),
