@@ -163,8 +163,8 @@ export default class Browser extends Morph {
 
     connect(sourceEditor, "textChange", this, "updateUnsavedChangeIndicatorDebounced");
     connect(sourceEditor, "textChange", this, "updateLineNumbers");
+    connect(sourceEditor, "onScroll", this, "updateLineNumbers");
     connect(sourceEditor, 'onMouseDown', this, 'updateFocusedCodeEntity');
-    connect(sourceEditor, "onScroll", this, "updateLineNumberScroll");
 
     moduleList.selection = null;
     moduleList.items = [];
@@ -510,10 +510,13 @@ export default class Browser extends Morph {
           lineNumbers.width, frozenWarning.height > 0 ? frozenWarning.bottom : metaInfoText.bottom,
           frozenWarning.width - sourceEditor.borderWidth + 1 - lineNumbers.width,
           this.height - Math.max(metaInfoText.bottom, frozenWarning.bottom)));
+      
       lineNumbers.setBounds(
         new Rectangle(
           0, frozenWarning.height > 0 ? frozenWarning.bottom : metaInfoText.bottom,
           lineNumbers.width,this.height - Math.max(metaInfoText.bottom, frozenWarning.bottom)));
+      //update the line numbers in case wrapping gets neccessary
+      this.updateLineNumbers();
     } finally { this._inLayout = false; }
   }
 
@@ -608,19 +611,28 @@ export default class Browser extends Morph {
   }
 
   updateLineNumbers() {
+    let lineHeight = this.ui.sourceEditor.defaultLineHeight;
     let linesCount = this.ui.sourceEditor.document.lines.length;
+    // this is not working
+    let firstLineOffset = (this.ui.sourceEditor.scroll.y % lineHeight);
+    let visibleLines = this.ui.sourceEditor.textLayout.whatsVisible(this.ui.sourceEditor);
+    let startingLine = visibleLines.startRow;
+    let lastLine = visibleLines.endRow;
     let width = (Math.floor(Math.log10(linesCount)) + 1) * config.codeEditor.defaultStyle.fontSize;
     let lineNumbersString = "";
-    for (let i = 1; i <= linesCount; i++) {
-      lineNumbersString = lineNumbersString.concat(i,"\n");
-    }
+    let i = 1;
+    visibleLines.lines.forEach((line) => {
+      let wraps = Math.floor(line.height/lineHeight) - 1;
+      lineNumbersString = lineNumbersString.concat(startingLine + i);
+      for (let j = 0; j <= wraps; j++) {
+        lineNumbersString = lineNumbersString.concat("\n");
+      }
+      i++;
+    })
+      
+    this.ui.lineNumbers.scroll.y = firstLineOffset; 
     this.ui.lineNumbers.textString = lineNumbersString;
     this.ui.lineNumbers.width = width;
-  }
-
-  updateLineNumberScroll() {
-    this.ui.lineNumbers.scroll.y = this.ui.sourceEditor.scroll.y;
-    this.ui.lineNumbers.requestStyling();
   }
 
   // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
